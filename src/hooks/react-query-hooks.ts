@@ -14,6 +14,7 @@ export const useSet = (setId: string) => {
       const set = await getSetById(setId);
       const customSetName = await getCustomSetNameById(setId);
       console.log(customSetName);
+      set.name = customSetName.name;
       //throw new Error("asd");
       return set;
     },

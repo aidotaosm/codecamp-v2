@@ -1,4 +1,4 @@
-import { useSet, useSets } from "@/hooks/react-query-hooks";
+import { useSet, useSets, useUpdateSetName } from "@/hooks/react-query-hooks";
 import { QueryKeys } from "@/models/enums";
 import { getCustomSetNameById } from "@/service/astha.service";
 import { getAllSets, getSetById } from "@/service/pokemon.service";
@@ -25,25 +25,30 @@ export const getStaticPaths: GetStaticPaths = async (context) => {
 export const getStaticProps: GetStaticProps<{
   dehydratedState: DehydratedState;
 }> = async (context) => {
-  console.log("I AM SERVER");
+  console.log("I AM SERVER set");
 
   const queryClient = new QueryClient();
   await queryClient.prefetchQuery({
     queryKey: [QueryKeys.set, context.params?.setId],
     queryFn: async () => {
       const set = await getSetById(context.params?.setId as string);
-      const customSetName = await getCustomSetNameById(
-        context.params?.setId as string
-      );
-      console.log(customSetName);
-      set.name = customSetName;
+      try {
+        const customSetName = await getCustomSetNameById(
+          context.params?.setId as string
+        );
+        console.log(customSetName, "asd");
+        set.name = customSetName.name;
+      } catch (error) {
+        console.log(error, "error");
+      }
+
       return set;
     },
   });
   //  await queryClient.prefetchQuery({
   //    queryKey: [QueryKeys.set, context.params?.setId,'customSetName'],
   //    queryFn: async () => {
-   
+
   //      const customSetName = await getCustomSetNameById(
   //        context.params?.setId as string
   //      );
@@ -54,14 +59,18 @@ export const getStaticProps: GetStaticProps<{
   //  });
   console.log("I AM SERVER");
   return {
-    props: { dehydratedState: dehydrate(queryClient), customSetName: ''},
+    props: { dehydratedState: dehydrate(queryClient), customSetName: "" },
     revalidate: 120,
   };
 };
-const SetPage: FC = () => {
+const SetPage: FC = (a) => {
+  console.log(a, "aaa");
   const router = useRouter();
   const { data: singleSet } = useSet(router.query.setId as string);
   console.log("im in set page");
+  const [setId, setSetId] = useState(router.query.setId as string);
+  const [customName, setCustomName] = useState("");
+  const mutationRes = useUpdateSetName(false);
 
   return (
     <div className="flex h-full">
@@ -77,6 +86,31 @@ const SetPage: FC = () => {
             ></Image>
           </div>
           <div className="">{singleSet?.name || "loading..."}</div>
+          <input
+            type="text"
+            name="setId"
+            placeholder="Set Id"
+            onKeyUp={(e) => {
+              setSetId(e.currentTarget.value);
+            }}
+            defaultValue={setId}
+          />
+          <input
+            type="text"
+            name="customName"
+            placeholder="Custom Name"
+            onKeyUp={(e) => {
+              setCustomName(e.currentTarget.value);
+            }}
+            // value={customName}
+          />
+          <button
+            onClick={() => {
+              mutationRes.mutate({ setId: setId, setName: customName });
+            }}
+          >
+            Post
+          </button>
         </div>
       )}
     </div>
